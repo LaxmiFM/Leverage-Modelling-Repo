@@ -1,6 +1,6 @@
 # start by pulling the python image
 FROM python:3.8
-
+import sys
 # copy the requirements file into the image
 COPY ./requirements.txt /app/requirements.txt
 
@@ -9,6 +9,8 @@ WORKDIR /app
 
 # install the dependencies and packages in the requirements file
 RUN python3 -m pip install --upgrade pip
+RUN python3 -m pip install pandas
+RUN python3 -m pip install numpy
 RUN python3 -m pip install -r requirements.txt
 
 # copy every content from the local file to the image
