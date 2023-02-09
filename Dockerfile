@@ -17,5 +17,5 @@ RUN python3 -m pip install -r requirements.txt
 COPY . /app
 
 # configure the container to run in an executed manner
-
+EXPOSE 5000
 CMD ["python3", "LeverageModelling.py" ]
