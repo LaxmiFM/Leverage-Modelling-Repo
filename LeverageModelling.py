@@ -1121,7 +1121,7 @@ def serviceDivLayout(df_AdjustedIntermediate,df_Excess,borrower,df_AvailabilityO
                     dbc.ModalBody([
                         returnDashDatableWithChecklist(borrower, "interactive-checklist"),
                         html.Br(),
-                        html.Button(id='SubmitRem', name='Submit', value='Submit', n_clicks=0,
+                        html.Button("Submit",id='SubmitRem', name='Submit',className="ms-auto", value='Submit', n_clicks=0,
                                              style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
                                                     'background-color': '#1ebea5', 'padding': '10px',
                                                     'border-radius': '5px'}),
