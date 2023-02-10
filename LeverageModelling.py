@@ -1,4 +1,3 @@
-import sys
 import pandas as pd
 import numpy as np
 from datetime import date
@@ -10,14 +9,6 @@ from flasgger.utils import swag_from
 import yearfrac as yf
 from dash import Dash, dash_table, dcc, html, Input, Output, State, dependencies
 import dash_bootstrap_components as dbc
-
-# from pycallgraph2 import PyCallGraph
-# from pycallgraph2.output import GraphvizOutput
-
-# import PySimpleGUI as sg
-
-# from pycallgraph2.output import GephiOutput
-
 
 server = Flask(__name__, template_folder='template')
 
@@ -55,11 +46,6 @@ def calculateAvailability(df_Portfolio1, df_Tiers1, df_Ebitda1, df_VAE1, df_Avai
     df_newBorrowerPortfolio = df_Portfolio1.tail(1)
     global df_newBorrowerVAE
     df_newBorrowerVAE = df_VAE1.tail(1)
-    # graphvizAdjusted = GraphvizOutput()
-    # graphvizAdjusted.output_type = 'pdf'
-    # graphvizAdjusted.output_file = 'AdjustedBorrowingFlow.pdf'
-    #
-    # with PyCallGraph(output=graphvizAdjusted):
 
     df_Portfolio1['Add Back Percentage'] = df_Portfolio1.apply(
         lambda x: Add_Back_Percentage(x['Adjusted TTM EBITDA_Initial'], x['EBITDA Addbacks']), axis=1)
@@ -208,12 +194,6 @@ def calculateAvailability(df_Portfolio1, df_Tiers1, df_Ebitda1, df_VAE1, df_Avai
          'Permitted Net Senior Leverage', 'Permitted TTM EBITDA', 'Permitted TTM EBITDA Current',
          'Excess Add-Backs', 'Capped AddBack Percentage', 'Add Back Percentage', 'Adjusted Borrowing Value']]
 
-    # graphvizExcessConc = GraphvizOutput()
-    # graphvizExcessConc.output_type = 'pdf'
-    # graphvizExcessConc.output_file = 'ExcessConcentrationFlow.pdf'
-    #
-    # with PyCallGraph(output=graphvizExcessConc):
-    # Calculations for Excess concentration
     try:
         df_Portfolio1['Adjusted Borrowing Value_DW'] = df_Portfolio1['Adjusted Borrowing Value']
     except:
@@ -738,12 +718,6 @@ def calculateAvailability(df_Portfolio1, df_Tiers1, df_Ebitda1, df_VAE1, df_Avai
          'Excess First Lien Last Out', 'Excess Maturity greater than 6 Years', 'Excess Gambling Industries',
          'Excess Recurring Revenue Loans']]
 
-    # graphvizOther = GraphvizOutput()
-    # graphvizOther.output_type = 'pdf'
-    # graphvizOther.output_file = 'RemainingValuesFlow.pdf'
-    #
-    # with PyCallGraph(output=graphvizOther):
-
     # Par Value of Portfolio
     Par_Value_of_Portfolio = df_Portfolio1['Borrower Outstanding Principal Balance'].sum()
 
@@ -1037,13 +1011,6 @@ def calculateAvailability(df_Portfolio1, df_Tiers1, df_Ebitda1, df_VAE1, df_Avai
                                   x['Amends Permitted Lien or Indebtedness'], x['Insolvency Event'],
                                   x['Failure to Deliver Financial Statements']), axis=1)
 
-    # returnExcess('Borrower', 'ExcessEQ', 'LargestIndustry')
-
-
-    # global permitted_ttm_ebitda
-    # permitted_ttm_ebitda = permittedTTMEBITDA_BZ(df_Portfolio, df_Ebitda, df_VAE)
-
-
     columns = {'Borrower': object, 'Event Type': object, 'Date of VAE Decision': str, 'Assigned Value': float,
                'Interest Coverage': float, 'TTM EBITDA': float, 'Senior Debt': float, 'Unrestricted Cash': float,
                'Total Debt': float, 'Liquidity': float}
@@ -1059,6 +1026,168 @@ def calculateAvailability(df_Portfolio1, df_Tiers1, df_Ebitda1, df_VAE1, df_Avai
     merged_df = pd.merge(df_borrowers, df_newVAE, on='Borrower', how='left')
 
     return pd.DataFrame(AvailabilityDict)
+
+def serviceDivLayout(df_AdjustedIntermediate,df_Excess,borrower,df_AvailabilityOutput):
+    return dbc.Container([
+            html.Br(),
+            html.Br(),
+            dcc.Dropdown(
+                id='dropdown',
+                options=[
+                    {'label': 'Intermediate results for Adjusted Borrowing Value', 'value': 'AdjBorrow'},
+                    {'label': 'Intermediate results for Excess Concentration', 'value': 'ExcessC'},
+                    {'label': 'Add new borrower', 'value': 'newBorrower'},
+                    {'label': 'Remove borrower','value': 'remBorrower'},
+                    {'label': 'Change EBITDA current', 'value': 'EBITDA'}
+                ],
+                value='',
+                placeholder='Options',
+            ),
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle('Intermediate results for Adjusted Borrowing Value')),
+                    dbc.ModalBody([
+                        returnDashDatable(df_AdjustedIntermediate, 'df_AdjustedIntermediate')
+                    ]),
+                    dbc.ModalFooter([
+                        dbc.Button(
+                            "Close", id="close1", className="ms-auto", n_clicks=0,
+                            style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
+                                   'background-color': '#1ebea5',
+                                   'border-radius': '5px'}
+                        )],
+                        style={'display': 'flex', 'justify-content': 'center'}
+                    ),
+                ],
+                id="modal1",
+                size='xl',
+                scrollable=True,
+                is_open=False,
+            ),
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle('Intermediate results for Excess Concentration')),
+                    dbc.ModalBody([
+                        returnDashDatable(df_Excess, 'df_Excess')
+                    ]),
+                    dbc.ModalFooter(
+                        dbc.Button(
+                            "Close", id="close2", className="ms-auto", n_clicks=0,
+                            style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
+                                   'background-color': '#1ebea5',
+                                   'border-radius': '5px'}
+                        )
+                    ),
+                ],
+                id="modal2",
+                size='xl',
+                scrollable=True,
+                is_open=False,
+            ),
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle("Add a new borrower")),
+                    dbc.ModalBody([
+                        html.Form([html.Button('Download Example', type='submit', id='button',
+                                               style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
+                                                      'background-color': '#1ebea5', 'padding': '10px',
+                                                      'border-radius': '5px'})],
+                                  action='download_example', method='get'),
+                        html.Br(),
+                        html.Form([dcc.Input(type='file', name='file'),
+                                   dcc.Input(type='submit', name='Upload', value='Upload',
+                                             style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
+                                                    'background-color': '#1ebea5', 'padding': '10px',
+                                                    'border-radius': '5px'})],
+                                  action='/new_borrowers', method='post', encType="multipart/form-data")
+                    ]),
+                    dbc.ModalFooter(
+                        dbc.Button(
+                            "Close", id="close3", className="ms-auto", n_clicks=0,
+                            style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
+                                   'background-color': '#1ebea5',
+                                   'border-radius': '5px'}
+                        )
+                    ),
+                ],
+                id="modal3",
+                size='xl',
+                scrollable=True,
+                is_open=False,
+            ),
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle('Remove Borrower')),
+                    dbc.ModalBody([
+                        returnDashDatableWithChecklist(borrower, "interactive-checklist"),
+                        html.Br(),
+                        html.Button(id='SubmitRem', name='Submit', value='Submit', n_clicks=0,
+                                             style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
+                                                    'background-color': '#1ebea5', 'padding': '10px',
+                                                    'border-radius': '5px'}),
+
+                    ]),
+                    dbc.ModalFooter(
+                        dbc.Button(
+                            "Close", id="close5", className="ms-auto", n_clicks=0,
+                            style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
+                                   'background-color': '#1ebea5',
+                                   'border-radius': '5px'}
+                        )
+                    ),
+                ],
+                id="modal5",
+                size='xl',
+                scrollable=True,
+                is_open=False,
+            ),
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle("Change EBITDA current")),
+                    dbc.ModalBody([
+                        html.Form(
+                            [
+                                html.Label("Current Adjusted TTM EBITDA",
+                                           style={'whiteSpace': 'normal', 'display': 'inline-block', 'margin-right': 20,
+                                                  'maxWidth': '500px'}),
+                                dcc.Input(type="number", min="-99", max="100", id="adjusted_ttm_ebitda_current",
+                                          name='Adjusted_TTM_EBITDA_Current',
+                                          placeholder='Enter the percentage value'),
+                                html.Br(),
+                                html.Button("Submit", type='submit', id='button',
+                                            style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
+                                                   'background-color': '#1ebea5', 'padding': '10px',
+                                                   'border-radius': '5px'})
+                            ], action='/analysis', method='post',
+                            style={'display': 'flex', 'justify-content': 'center'})
+                    ]),
+                    dbc.ModalFooter(
+                        dbc.Button(
+                            "Close", id="close4", className="ms-auto", n_clicks=0,
+                            style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
+                                   'background-color': '#1ebea5',
+                                   'border-radius': '5px'}
+                        )
+                    ),
+                ],
+                id="modal4",
+                size='xl',
+                scrollable=True,
+                is_open=False,
+            ),
+            html.Br(),
+            html.H4("Availability Data"),
+
+            returnDashDatable(df_AvailabilityOutput, 'df_AvailabilityOutput'),
+            html.Br(),
+            html.Form([html.Button('Download Results', type='submit', id='button',
+                                   style={'background-color': '#1ebea5', 'border': '0px', 'border-radius': '5px',
+                                          'padding': '10px',
+                                          'color': '#ffffff',
+                                          'font-weight': '500'})],
+                      action='download_excel', method='get', style={'display': 'flex', 'justify-content': 'center'}),
+            html.Br(),
+        ])
 
 
 # def calculate
@@ -1098,7 +1227,7 @@ def returnDashDatableWithChecklist(df, id):
             {
                 'if': {'column_id': c},
                 'textAlign': 'left',
-            } for c in ['Terms','Borrower','Loan Type']
+            } for c in ['Terms', 'Borrower', 'Loan Type']
         ],
         css=[{
             'selector': '.dash-cell div.dash-cell-value',
@@ -1109,6 +1238,8 @@ def returnDashDatableWithChecklist(df, id):
         row_selectable="multi",
         selected_rows=[],
         id=id)
+
+
 def returnDashDatable(df, id):
     print(type(df))
     return dash_table.DataTable(
@@ -1149,7 +1280,7 @@ def returnDashDatable(df, id):
                 'if': {'column_id': c},
                 'textAlign': 'left',
 
-            } for c in ['Terms','Borrower','Loan Type']
+            } for c in ['Terms', 'Borrower', 'Loan Type']
         ],
         css=[{
             'selector': '.dash-cell div.dash-cell-value',
@@ -1242,7 +1373,7 @@ def service():
                 value='',
                 placeholder='Services',
             ),
-            html.Div(id='dropdown-output')
+            html.Div([html.Div([html.Div(id='dropdown-output2')],id='dropdown-output')], id='dropdown-output1')
         ])
     ])
     return redirect(url_for('/services/'))
@@ -1252,236 +1383,49 @@ services_app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP], server=server, 
 services_app.layout = html.H1('Services')
 services_app.config.suppress_callback_exceptions = True
 
+
 @services_app.callback(
-    Output('dropdown-output', 'children'),
+    Output('dropdown-output2', 'children'),
     [Input('dropdown-menu', 'value')])
 def callback_services(value):
-    print(value)
+    # print(value)
     if value == 'completeAnalysis':
         global df_AvailabilityOutput
         df_AvailabilityOutput = calculateAvailability(df_Portfolio, df_Tiers, df_Ebitda, df_VAE, df_Availability,
-                                                     df_ExcessConcentration, df_Industries, df_BorrowerOutstandings)
-        borrowers=df_Portfolio['Borrower'].to_list()
-        services_app.layout = dbc.Container([
-            html.Br(),
+                                                      df_ExcessConcentration, df_Industries, df_BorrowerOutstandings)
+        borrowers = df_Portfolio['Borrower'].to_list()
+        if len(merged_df) != 0:
+            return dcc.Location(pathname="/updateVAE", id="someid_doesnt_matter")
+        else:
+            return serviceDivLayout(df_AdjustedIntermediate, df_Excess, df_Portfolio[['Borrower']], df_AvailabilityOutput)
 
-            html.Br(),
-            dcc.Dropdown(
-                id='dropdown',
-                options=[
-                    {'label': 'Intermediate results for Adjusted Borrowing Value', 'value': 'AdjBorrow'},
-                    {'label': 'Intermediate results for Excess Concentration', 'value': 'ExcessC'},
-                    {'label': 'Add new borrower', 'value': 'newBorrower'},
-                    {'label': 'Remove borrower','value': 'remBorrower'},
-                    {'label': 'Change EBITDA current', 'value': 'EBITDA'}
-                ],
-                value='',
-                placeholder='Options',
-            ),
-            dbc.Modal(
-                [
-                    dbc.ModalHeader(dbc.ModalTitle('Intermediate results for Adjusted Borrowing Value')),
-                    dbc.ModalBody([
-                        returnDashDatable(df_AdjustedIntermediate, 'df_AdjustedIntermediate')
-                    ]),
-                    dbc.ModalFooter([
-                        dbc.Button(
-                            "Close", id="close1", className="ms-auto", n_clicks=0,
-                            style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
-                                   'background-color': '#1ebea5',
-                                   'border-radius': '5px'}
-                        )],
-                        style={'display': 'flex', 'justify-content': 'center'}
-                    ),
-                ],
-                id="modal1",
-                size='xl',
-                scrollable=True,
-                is_open=False,
-            ),
-            dbc.Modal(
-                [
-                    dbc.ModalHeader(dbc.ModalTitle('Intermediate results for Excess Concentration')),
-                    dbc.ModalBody([
-                        returnDashDatable(df_Excess, 'df_Excess')
-                    ]),
-                    dbc.ModalFooter(
-                        dbc.Button(
-                            "Close", id="close2", className="ms-auto", n_clicks=0,
-                            style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
-                                   'background-color': '#1ebea5',
-                                   'border-radius': '5px'}
-                        )
-                    ),
-                ],
-                id="modal2",
-                size='xl',
-                scrollable=True,
-                is_open=False,
-            ),
-            dbc.Modal(
-                [
-                    dbc.ModalHeader(dbc.ModalTitle("Add a new borrower")),
-                    dbc.ModalBody([
-                        html.Form([html.Button('Download Example', type='submit', id='button',
-                                               style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
-                                                      'background-color': '#1ebea5', 'padding': '10px',
-                                                      'border-radius': '5px'})],
-                                  action='download_example', method='get'),
-                        html.Br(),
-                        html.Form([dcc.Input(type='file', name='file'),
-                                   dcc.Input(type='submit', name='Upload', value='Upload',
-                                             style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
-                                                    'background-color': '#1ebea5', 'padding': '10px',
-                                                    'border-radius': '5px'})],
-                                  action='/new_borrowers', method='post', encType="multipart/form-data")
-                    ]),
-                    dbc.ModalFooter(
-                        dbc.Button(
-                            "Close", id="close3", className="ms-auto", n_clicks=0,
-                            style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
-                                   'background-color': '#1ebea5',
-                                   'border-radius': '5px'}
-                        )
-                    ),
-                ],
-                id="modal3",
-                size='xl',
-                scrollable=True,
-                is_open=False,
-            ),
-            dbc.Modal(
-                [
-                    dbc.ModalHeader(dbc.ModalTitle('Remove Borrower')),
-                    dbc.ModalBody([
-                        returnDashDatableWithChecklist(df_Portfolio[['Borrower']], "interactive-checklist"),
-                        html.Br(),
-                        dcc.Input(type='submit',id='Submit', name='Submit', value='Submit',
-                                             style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
-                                                    'background-color': '#1ebea5', 'padding': '10px',
-                                                    'border-radius': '5px'}),
-
-                    ]),
-                    dbc.ModalFooter(
-                        dbc.Button(
-                            "Close", id="close5", className="ms-auto", n_clicks=0,
-                            style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
-                                   'background-color': '#1ebea5',
-                                   'border-radius': '5px'}
-                        )
-                    ),
-                ],
-                id="modal5",
-                size='xl',
-                scrollable=True,
-                is_open=False,
-            ),
-            dbc.Modal(
-                [
-                    dbc.ModalHeader(dbc.ModalTitle("Change EBITDA current")),
-                    dbc.ModalBody([
-                        html.Form(
-                            [
-                                html.Label("Current Adjusted TTM EBITDA",
-                                           style={'whiteSpace': 'normal', 'display': 'inline-block', 'margin-right': 20,
-                                                  'maxWidth': '500px'}),
-                                dcc.Input(type="number", min="-99", max="100", id="adjusted_ttm_ebitda_current",
-                                          name='Adjusted_TTM_EBITDA_Current',
-                                          placeholder='Enter the percentage value'),
-                                html.Br(),
-                                html.Button("Submit", type='submit', id='button',
-                                            style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
-                                                   'background-color': '#1ebea5', 'padding': '10px',
-                                                   'border-radius': '5px'})
-                            ], action='/analysis', method='post',
-                            style={'display': 'flex', 'justify-content': 'center'})
-                    ]),
-                    dbc.ModalFooter(
-                        dbc.Button(
-                            "Close", id="close4", className="ms-auto", n_clicks=0,
-                            style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
-                                   'background-color': '#1ebea5',
-                                   'border-radius': '5px'}
-                        )
-                    ),
-                ],
-                id="modal4",
-                size='xl',
-                scrollable=True,
-                is_open=False,
-            ),
-            # html.Div(
-            #     id='popup',
-            #     style={
-            #         'display': 'none',
-            #         'position': 'fixed',
-            #         'left': '50%',
-            #         'top': '50%',
-            #         'transform': 'translate(-50%, -50%)',
-            #         'background-color': 'white',
-            #         'padding': '20px'
-            #     }
-            # ),
-            html.Br(),
-            html.H4("Availability Data"),
-
-            returnDashDatable(df_AvailabilityOutput, 'df_AvailabilityOutput'),
-            html.Br(),
-            html.Form([html.Button('Download Results', type='submit', id='button',
-                                   style={'background-color': '#1ebea5', 'border': '0px', 'border-radius': '5px',
-                                          'padding': '10px',
-                                          'color': '#ffffff',
-                                          'font-weight': '500'})],
-                      action='download_excel', method='get', style={'display': 'flex', 'justify-content': 'center'}),
-            html.Br(),
-            # html.Br(),
-            # html.H4("Portfolio Data"),
-            # returnDashDatable(df_Portfolio, 'df_Portfolio'),
-            # html.Br(),
-            # html.H4("Excess Concentration Data"),
-            # returnDashDatable(df_ExcessConcentration, 'df_ExcessConcentration'),
-            # html.Br(),
-            # html.H4("Obligor Outstanding Data"),
-            # returnDashDatable(df_BorrowerOutstandings, 'df_BorrowerOutstandings'),
-            # html.Br(),
-            # html.H4("Tiers Data"),
-            # returnDashDatable(df_Tiers, 'df_Tiers'),
-            # html.Br(),
-            # html.H4("EBITDA Data"),
-            # returnDashDatable(df_Ebitda, 'df_Ebitda'),
-            # html.Br(),
-            # html.H4("Industries Data"),
-            # returnDashDatable(df_Industries, 'df_Industries'),
-            # html.Br(),
-            # html.H4("VAE Data"),
-            # returnDashDatable(df_VAE, 'df_VAE'),
-            # html.Br(),
-        ])
-        return services_app.layout
-    elif value =='Top5Industries':
+    elif value == 'Top5Industries':
         df_AvailabilityOutput = calculateAvailability(df_Portfolio, df_Tiers, df_Ebitda, df_VAE, df_Availability,
                                                       df_ExcessConcentration, df_Industries, df_BorrowerOutstandings)
         result, df7 = top5LargestIndustries(df_Portfolio)
         return [result, html.Br(), returnDashDatable(df7, 'df7')]
-    elif value =='Top5Obligors':
+    elif value == 'Top5Obligors':
         df_AvailabilityOutput = calculateAvailability(df_Portfolio, df_Tiers, df_Ebitda, df_VAE, df_Availability,
                                                       df_ExcessConcentration, df_Industries, df_BorrowerOutstandings)
         result1, df8 = Top5LargestExcess(df_Portfolio)
         return [result1, html.Br(), returnDashDatable(df8, 'df8')]
-    elif value =='permittedTTMEBITDA':
+    elif value == 'permittedTTMEBITDA':
         permitted_ttm_ebitda_df = permittedTTMEBITDA_BZ(df_Portfolio, df_Ebitda, df_VAE)
 
-        permitted_ttm_ebitda_df['Permitted TTM EBITDA Current'] = permitted_ttm_ebitda_df['Permitted TTM EBITDA Current'].apply(int).map('${:,d}'.format)
+        permitted_ttm_ebitda_df['Permitted TTM EBITDA Current'] = permitted_ttm_ebitda_df[
+            'Permitted TTM EBITDA Current'].apply(int).map('${:,d}'.format)
         return returnDashDatable(permitted_ttm_ebitda_df, 'permitted_ttm_ebitda_df')
     elif value == 'permittedNetSeniorLeverage':
-        permittedNetSeniorLeverage_df=permittedNetSeniorLeverage_CX(df_Portfolio, df_Ebitda, df_VAE)
+        permittedNetSeniorLeverage_df = permittedNetSeniorLeverage_CX(df_Portfolio, df_Ebitda, df_VAE)
         permittedNetSeniorLeverage_df['Permitted Net Senior Leverage'] = permittedNetSeniorLeverage_df[
             'Permitted Net Senior Leverage'].map('{:,.2f}'.format)
         return returnDashDatable(permittedNetSeniorLeverage_df, 'permittedNetSeniorLeverage_df')
-    elif value =='permittedNetTotalLeverage':
-        permittedNetTotalLeverage_df=permittedNetTotalLeverage_CZ(df_Portfolio, df_Ebitda, df_VAE)
-        permittedNetTotalLeverage_df['Permitted Net Total Leverage'] = permittedNetTotalLeverage_df['Permitted Net Total Leverage'].map('{:,.2f}'.format)
+    elif value == 'permittedNetTotalLeverage':
+        permittedNetTotalLeverage_df = permittedNetTotalLeverage_CZ(df_Portfolio, df_Ebitda, df_VAE)
+        permittedNetTotalLeverage_df['Permitted Net Total Leverage'] = permittedNetTotalLeverage_df[
+            'Permitted Net Total Leverage'].map('{:,.2f}'.format)
         return returnDashDatable(permittedNetTotalLeverage_df, 'permittedNetTotalLeverage_df')
+
 
 @services_app.callback(
     Output("modal1", "is_open"),
@@ -1489,8 +1433,11 @@ def callback_services(value):
     [State("modal1", "is_open")],
 )
 def toggle_modal1(value, n1, is_open):
-    if value == 'AdjBorrow' or n1:
-        return not is_open
+    if value == 'AdjBorrow':
+        return True
+    elif n1:
+        return False
+
 
 @services_app.callback(
     Output("modal2", "is_open"),
@@ -1498,8 +1445,13 @@ def toggle_modal1(value, n1, is_open):
     [State("modal2", "is_open")],
 )
 def toggle_modal2(value, n1, is_open):
-    if value == 'ExcessC' or n1:
-        return not is_open
+    if value == 'ExcessC':
+        return True
+    elif n1:
+        return False
+
+
+
 
 @services_app.callback(
     Output("modal3", "is_open"),
@@ -1507,8 +1459,11 @@ def toggle_modal2(value, n1, is_open):
     [State("modal3", "is_open")],
 )
 def toggle_modal3(value, n1, is_open):
-    if value == 'newBorrower' or n1:
-        return not is_open
+    if value == 'newBorrower':
+        return True
+    elif n1:
+        return False
+
 
 @services_app.callback(
     Output("modal4", "is_open"),
@@ -1516,23 +1471,50 @@ def toggle_modal3(value, n1, is_open):
     [State("modal4", "is_open")],
 )
 def toggle_modal4(value, n1, is_open):
-    if value == 'EBITDA' or n1:
-        return not is_open
+    if value == 'EBITDA':
+        return True
+    elif n1:
+        return False
 
-# @services_app.callback(
-#     Output('modal5', "is_open"),
-#     Input('Submit', "n_clicks"),
-#     Input('interactive-checklist', "derived_virtual_data"),
-#     Input('interactive-checklist', "derived_virtual_selected_rows"))
-# def update_graphs(n, rows, derived_virtual_selected_rows):
-#     if derived_virtual_selected_rows is None:
-#         derived_virtual_selected_rows = []
-#     elif n:
-#         print(rows)
-#         print(derived_virtual_selected_rows)
-#     dff = df_Protfolio[['Borrower']] if rows is None else pd.DataFrame(rows)
-#     borrower_list = ['Borrower' for i in range(len(dff)) if i in derived_virtual_selected_rows]
-#     return borrower_list
+
+@services_app.callback(
+    [Output('dropdown-output3', 'children')],
+    [Input('SubmitRem', "n_clicks"),
+     Input('interactive-checklist', "derived_virtual_data"),
+     Input('interactive-checklist', "derived_virtual_selected_rows")])
+def update_df(n, rows, derived_virtual_selected_rows):
+    if n:
+        if derived_virtual_selected_rows is None:
+            derived_virtual_selected_rows = []
+        # print(rows)
+        remove_borrower_list = []
+        for i in derived_virtual_selected_rows:
+            remove_borrower_list.append(rows[i]['Borrower'])
+
+        global df_Portfolio
+        df_Portfolio = df_Portfolio[~df_Portfolio['Borrower'].isin(remove_borrower_list)]
+        print("shape of dataframes: ",df_Portfolio.shape,df_Portfolio.shape)
+        df_AvailabilityOutputRemBorrower = calculateAvailability(df_Portfolio, df_Tiers, df_Ebitda, df_VAE,
+                                                                 df_Availability,
+                                                                 df_ExcessConcentration, df_Industries,
+                                                                 df_BorrowerOutstandings)
+
+        df_AvailabilityOutputRemBorrower.rename(
+            columns={'Values': 'Availability after removing a Borrower'}, inplace=True)
+        global df_AvailabilityOutput
+        df_AvailabilityOutput = df_AvailabilityOutput.merge(df_AvailabilityOutputRemBorrower, on='Terms')
+        print(df_Portfolio[['Borrower']])
+        return [serviceDivLayout(df_AdjustedIntermediate, df_Excess, df_Portfolio[['Borrower']], df_AvailabilityOutput)]
+
+
+# def remove_borrower_update_layout(remove_borrower_list, df_Portfolio):
+#     df_Portfolio_Updated = df_Portfolio[~df_Portfolio['Borrower'].isin(remove_borrower_list)]
+#     df_AvailabilityOutputRemBorrower = calculateAvailability(df_Portfolio_Updated, df_Tiers, df_Ebitda, df_VAE,
+#                                                              df_Availability,
+#                                                              df_ExcessConcentration, df_Industries,
+#                                                              df_BorrowerOutstandings)
+#     return returnDashDatable(df_AvailabilityOutputRemBorrower, "df_AvailabilityOutputRemBorrower")
+
 
 @services_app.callback(
     Output("modal5", "is_open"),
@@ -1540,14 +1522,18 @@ def toggle_modal4(value, n1, is_open):
     [State("modal5", "is_open")],
 )
 def toggle_modal5(value, n1, is_open):
-    if value == 'remBorrower' or n1:
-        return not is_open
+    if value == 'remBorrower':
+        return True
+    elif n1:
+        return False
 
-@server.route('/remove_borrowers', methods=['GET','POST'])
-def removBorrowers():
-    print(request.form)
-    dictBorrowers = request.form['interactive-checklist']
-    print(dictBorrowers)
+
+
+# @server.route('/remove_borrowers', methods=['GET','POST'])
+# def removBorrowers():
+#     print(request.form)
+#     dictBorrowers = request.form['interactive-checklist']
+#     print(dictBorrowers)
 
 @server.route('/permittedTTMEBITDA', methods=['GET', 'POST'])
 def permittedTTMEBITDAservice():
@@ -1608,6 +1594,7 @@ update_app.layout = html.H1('Updated values page')
 def updateVAE():
     updateVAE_app.layout = dbc.Container([
         html.Br(),
+        html.Div(id='temp_div'),
         dbc.Modal(
             [
                 dbc.ModalHeader(dbc.ModalTitle("Update the Borrower details")),
@@ -1628,15 +1615,14 @@ def updateVAE():
                                                 'border-radius': '5px'})],
                               action='/newVAE', method='post', encType="multipart/form-data"),
                     html.Br(),
-                    returnDashDatable(merged_df, 'merged_df')
+                    returnDashDatable(merged_df, 'merged_df'),
                 ]),
                 dbc.ModalFooter(
-                    html.Form([html.Button('Continue without change', type='submit', id='button',
+                    [html.Button('Continue without change', type='submit', id='continue',
                                            style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
                                                   'background-color': '#1ebea5', 'padding': '10px',
                                                   'border-radius': '5px'})],
-                              action='/dash/', method='get')
-                ),
+                              ),
             ],
             id="modal5",
             size='xl',
@@ -1650,6 +1636,46 @@ def updateVAE():
 
 updateVAE_app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP], server=server, routes_pathname_prefix='/updatedVAE/')
 updateVAE_app.layout = html.H1('Updated VAE')
+
+@updateVAE_app.callback(
+    Output('temp_div', 'children'),
+    [Input('continue', "n_clicks")])
+def update_services_app(n):
+    if n:
+        return dcc.Location(pathname="/redirect_services", id="someid_doesnt_matter")
+@server.route('/redirect_services')
+def temp_service_redirect():
+    # print('In redirect')
+    services_app.layout = dbc.Container([
+        html.Br(),
+        html.Div([
+            dcc.Dropdown(
+                id='dropdown-menu',
+                options=[
+                    {'label': 'Permitted TTM EBITDA',
+                     'value': 'permittedTTMEBITDA'},
+                    {'label': 'Permitted Net Senior Leverage',
+                     'value': 'permittedNetSeniorLeverage'},
+                    {'label': 'Permitted Net Total Leverage',
+                     'value': 'permittedNetTotalLeverage'},
+                    {'label': 'Excess concentration for top 5 Industries',
+                     'value': 'Top5Industries'},
+                    {'label': 'Excess concentration for top 5 Obligors',
+                     'value': 'Top5Obligors'},
+                    {'label': 'Complete Analysis',
+                     'value': 'completeAnalysis'},
+                ],
+                value='',
+                placeholder='Services',
+            ),
+            html.Div([serviceDivLayout(df_AdjustedIntermediate, df_Excess, df_Portfolio[['Borrower']], df_AvailabilityOutput)], id='dropdown-output3'),
+            html.Div(children=[html.Div([html.Div(id='dropdown-output2')],id='dropdown-output')], id='dropdown-output1'),
+
+        ])
+    ])
+    return redirect(url_for('/services/'))
+
+
 
 
 @app.callback(
@@ -1673,11 +1699,6 @@ def view():
     # Dict['df_Portfolio'] = df_Portfolio.to_dict
     # Universal Values used in computation
     # global df_AvailabilityOutput
-    # graphviz = GraphvizOutput()
-    # graphviz.output_type = 'pdf'
-    # graphviz.output_file = 'LeverageModelFlow.pdf'
-    #
-    # with PyCallGraph(output=graphviz):
     global df_AvailabilityOutput
     df_AvailabilityOutput = calculateAvailability(df_Portfolio, df_Tiers, df_Ebitda, df_VAE, df_Availability,
                                                   df_ExcessConcentration, df_Industries, df_BorrowerOutstandings)
@@ -1817,16 +1838,6 @@ def view():
                         selected_rows=[],
 
                     ),
-                    # dcc.Checklist(
-                    #
-                    #     id='borrowers-checklist',
-                    #     columns=[{'name': 'Borrower', 'id': 'Borrower', 'type': 'checkbox' if 'Borrower' == 'selected' else 'numeric'}],
-                    #     data=df_Portfolio.assign(selected=[False for i in range(len(df_Portfolio))]).to_dict('records'),
-                    #     editable=True
-                    #     # id="borrowers-checklist",
-                    #     # options=[{"label": borrower, "value": borrower} for borrower in df_Portfolio['Borrower'].to_list()],
-                    #     # value=[]
-                    # )
                 ]),
                 dbc.ModalFooter(
                     dbc.Button(
@@ -1841,18 +1852,6 @@ def view():
             scrollable=True,
             is_open=False,
         ),
-        # html.Div(
-        #     id='popup',
-        #     style={
-        #         'display': 'none',
-        #         'position': 'fixed',
-        #         'left': '50%',
-        #         'top': '50%',
-        #         'transform': 'translate(-50%, -50%)',
-        #         'background-color': 'white',
-        #         'padding': '20px'
-        #     }
-        # ),
         html.Br(),
         html.H4("Availability Data"),
 
@@ -1865,30 +1864,7 @@ def view():
                                       'font-weight': '500'})],
                   action='download_excel', method='get', style={'display': 'flex', 'justify-content': 'center'}),
         html.Br(),
-        # html.Br(),
-        # html.H4("Portfolio Data"),
-        # returnDashDatable(df_Portfolio, 'df_Portfolio'),
-        # html.Br(),
-        # html.H4("Excess Concentration Data"),
-        # returnDashDatable(df_ExcessConcentration, 'df_ExcessConcentration'),
-        # html.Br(),
-        # html.H4("Obligor Outstanding Data"),
-        # returnDashDatable(df_BorrowerOutstandings, 'df_BorrowerOutstandings'),
-        # html.Br(),
-        # html.H4("Tiers Data"),
-        # returnDashDatable(df_Tiers, 'df_Tiers'),
-        # html.Br(),
-        # html.H4("EBITDA Data"),
-        # returnDashDatable(df_Ebitda, 'df_Ebitda'),
-        # html.Br(),
-        # html.H4("Industries Data"),
-        # returnDashDatable(df_Industries, 'df_Industries'),
-        # html.Br(),
-        # html.H4("VAE Data"),
-        # returnDashDatable(df_VAE, 'df_VAE'),
-        # html.Br(),
     ])
-
     # return html_string
     # output = BytesIO()
     # writer = pd.ExcelWriter(output, engine='xlsxwriter')
@@ -1902,7 +1878,6 @@ def view():
     if len(merged_df) != 0:
         return redirect('/updateVAE')
     return redirect(url_for('/dash/'))
-
 
 
 @app.callback(
@@ -1944,19 +1919,6 @@ def toggle_modal4(value, n1, is_open):
     if value == 'EBITDA' or n1:
         return not is_open
 
-# app.config.suppress_callback_exceptions = True
-
-# @app.callback(
-#         dependencies.Output('popup', 'children'),
-#         [dependencies.Input('dropdown', 'value')]
-#     )
-# def show_data_table(value):
-#     if value is None:
-#         return []
-#     elif value == 'AdjBorrow':
-#         return [returnDashDatable(df_AdjustedIntermediate,'df_AdjustedIntermediate')]
-#     elif value == 'ExcessC':
-#         return [returnDashDatable(df_Excess,'df_Excess')]
 
 @server.route('/analysis', methods=['POST'])
 def updateAvailability():
@@ -1977,195 +1939,38 @@ def updateAvailability():
     df_AvailabilityOutput = df_AvailabilityOutput.merge(Updated_df_AvailabilityOutput, on='Terms')
     # df_AvailabilityOutput.merge(Updated_df_AvailabilityOutput, on='Terms')
 
-    app.layout = dbc.Container([
+    services_app.layout = dbc.Container([
         html.Br(),
-        dcc.Dropdown(
-            id='dropdown',
-            options=[
-                {'label': 'Intermediate results for Adjusted Borrowing Value', 'value': 'AdjBorrow'},
-                {'label': 'Intermediate results for Excess Concentration', 'value': 'ExcessC'},
-                {'label': 'Add new borrower', 'value': 'newBorrower'},
-                {'label': 'Change EBITDA current', 'value': 'EBITDA'}
-            ],
-            value='',
-            placeholder='Options',
-        ),
-        dbc.Modal(
-            [
-                dbc.ModalHeader(dbc.ModalTitle("Adjusted borrowing value intermediate values")),
-                dbc.ModalBody([
-                    returnDashDatable(df_AdjustedIntermediate, 'df_AdjustedIntermediate')
-                ]),
-                dbc.ModalFooter(
-                    dbc.Button(
-                        "Close", id="close1", className="ms-auto", n_clicks=0,
-                        style={'border': '0', 'color': '#ffffff', 'font-weight': '500', 'background-color': '#1ebea5',
-                               'padding': '10px', 'border-radius': '5px'}
-                    )
-                ),
-            ],
-            id="modal1",
-            size='xl',
-            scrollable=True,
-            is_open=False,
-        ),
-        dbc.Modal(
-            [
-                dbc.ModalHeader(dbc.ModalTitle("Excess Concentration intermediate values")),
-                dbc.ModalBody([
-                    returnDashDatable(df_Excess, 'df_Excess')
-                ]),
-                dbc.ModalFooter(
-                    dbc.Button(
-                        "Close", id="close2", className="ms-auto", n_clicks=0,
-                        style={'border': '0', 'color': '#ffffff', 'font-weight': '500', 'background-color': '#1ebea5',
-                               'padding': '10px', 'border-radius': '5px'}
-                    )
-                ),
-            ],
-            id="modal2",
-            size='xl',
-            scrollable=True,
-            is_open=False,
-        ),
-        dbc.Modal(
-            [
-                dbc.ModalHeader(dbc.ModalTitle("Add a new borrower")),
-                dbc.ModalBody([
-                    html.Form([html.Button('Download Example', type='submit', id='button',
-                                           style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
-                                                  'background-color': '#1ebea5', 'padding': '10px',
-                                                  'border-radius': '5px'})],
-                              action='download_example', method='get'),
-                    html.Br(),
-                    html.Form([dcc.Input(type='file', name='file'),
-                               dcc.Input(type='submit', name='Upload', value='Upload',
-                                         style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
-                                                'background-color': '#1ebea5', 'padding': '10px',
-                                                'border-radius': '5px'})],
-                              action='/new_borrowers', method='post', encType="multipart/form-data")
-                ]),
-                dbc.ModalFooter(
-                    dbc.Button(
-                        "Close", id="close3", className="ms-auto", n_clicks=0,
-                        style={'border': '0', 'color': '#ffffff', 'font-weight': '500', 'background-color': '#1ebea5',
-                               'padding': '10px', 'border-radius': '5px'}
-                    )
-                ),
-            ],
-            id="modal3",
-            size='xl',
-            scrollable=True,
-            is_open=False,
-        ),
-        dbc.Modal(
-            [
-                dbc.ModalHeader(dbc.ModalTitle("Change EBITDA current")),
-                dbc.ModalBody([
-                    html.Form(
-                        [
-                            html.Label("Current Adjusted TTM EBITDA",
-                                       style={'whiteSpace': 'normal', 'display': 'inline-block', 'margin-right': 20,
-                                              'maxWidth': '500px'}),
-                            dcc.Input(type="number", min="-99", max="100", id="adjusted_ttm_ebitda_current",
-                                      name='Adjusted_TTM_EBITDA_Current',
-                                      placeholder='Enter the percentage value'),
-                            html.Br(),
-                            html.Button("Submit", type='submit', id='button',
-                                        style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
-                                               'background-color': '#1ebea5', 'padding': '10px',
-                                               'border-radius': '5px'})
-                        ], action='/analysis', method='post', style={'display': 'flex', 'justify-content': 'center'})
-                ]),
-                dbc.ModalFooter(
-                    dbc.Button(
-                        "Close", id="close4", className="ms-auto", n_clicks=0,
-                        style={'border': '0', 'color': '#ffffff', 'font-weight': '500', 'background-color': '#1ebea5',
-                               'padding': '10px', 'border-radius': '5px'}
-                    )
-                ),
-            ],
-            id="modal4",
-            size='xl',
-            scrollable=True,
-            is_open=False,
-        ),
-        # html.Div(
-        #     id='popup',
-        #     style={
-        #         'display': 'none',
-        #         'position': 'fixed',
-        #         'left': '50%',
-        #         'top': '50%',
-        #         'transform': 'translate(-50%, -50%)',
-        #         'background-color': 'white',
-        #         'padding': '20px'
-        #     }
-        # ),
-        # html.Br(),
-        # html.H4("Availability Data"),
-        # returnDashDatable(df_AvailabilityOutput, 'df_AvailabilityOutput'),
-        # html.Br(),
-        # html.H4("Portfolio Data"),
-        # returnDashDatable(df_Portfolio, 'df_Portfolio'),
-        # html.Br(),
-        # html.H4("Excess Concentration Data"),
-        # returnDashDatable(df_ExcessConcentration, 'df_ExcessConcentration'),
-        # html.Br(),
-        # html.H4("Obligor Outstanding Data"),
-        # returnDashDatable(df_BorrowerOutstandings, 'df_BorrowerOutstandings'),
-        # html.Br(),
-        # html.H4("Tiers Data"),
-        # returnDashDatable(df_Tiers, 'df_Tiers'),
-        # html.Br(),
-        # html.H4("EBITDA Data"),
-        # returnDashDatable(df_Ebitda, 'df_Ebitda'),
-        # html.Br(),
-        # html.H4("Industries Data"),
-        # returnDashDatable(df_Industries, 'df_Industries'),
-        # html.Br(),
-        # html.H4("VAE Data"),
-        # returnDashDatable(df_VAE, 'df_VAE'),
-        # html.Br(),
-        html.Br(),
-        html.H4("Availability Data"),
-        returnDashDatable(df_AvailabilityOutput, 'df_AvailabilityOutput'),
-        html.Br(),
-        html.Form([html.Button('Download Results', type='submit', id='button',
-                               style={'background-color': '#1ebea5', 'border': '0px', 'border-radius': '5px',
-                                      'padding': '10px',
-                                      'color': '#ffffff',
-                                      'font-weight': '500'})],
-                  action='download_excel', method='get', style={'display': 'flex', 'justify-content': 'center'}),
-        # html.H4("Portfolio Data"),
-        # returnDashDatable(df_Portfolio, 'df_Portfolio'),
-        # html.Br(),
-        # html.H4("Excess Concentration Data"),
-        # returnDashDatable(df_ExcessConcentration, 'df_ExcessConcentration'),
-        # html.Br(),
-        # html.H4("Obligor Outstanding Data"),
-        # returnDashDatable(df_BorrowerOutstandings, 'df_BorrowerOutstandings'),
-        # html.Br(),
-        # html.H4("Tiers Data"),
-        # returnDashDatable(df_Tiers, 'df_Tiers'),
-        # html.Br(),
-        # html.H4("EBITDA Data"),
-        # returnDashDatable(df_Ebitda, 'df_Ebitda'),
-        # html.Br(),
-        # html.H4("Industries Data"),
-        # returnDashDatable(df_Industries, 'df_Industries'),
-        # html.Br(),
-        # html.H4("VAE Data"),
-        # returnDashDatable(df_VAE, 'df_VAE'),
-        # html.Br(),
+        html.Div([
+            dcc.Dropdown(
+                id='dropdown-menu',
+                options=[
+                    {'label': 'Permitted TTM EBITDA',
+                     'value': 'permittedTTMEBITDA'},
+                    {'label': 'Permitted Net Senior Leverage',
+                     'value': 'permittedNetSeniorLeverage'},
+                    {'label': 'Permitted Net Total Leverage',
+                     'value': 'permittedNetTotalLeverage'},
+                    {'label': 'Excess concentration for top 5 Industries',
+                     'value': 'Top5Industries'},
+                    {'label': 'Excess concentration for top 5 Obligors',
+                     'value': 'Top5Obligors'},
+                    {'label': 'Complete Analysis',
+                     'value': 'completeAnalysis'},
+                ],
+                value='',
+                placeholder='Services',
+            ),
+            html.Div([serviceDivLayout(df_AdjustedIntermediate, df_Excess, df_Portfolio[['Borrower']],
+                                       df_AvailabilityOutput)], id='dropdown-output5'),
+            html.Div(children=[html.Div([html.Div(id='dropdown-output2')], id='dropdown-output')],
+                     id='dropdown-output1'),
+
+        ])
     ])
 
-    return redirect(url_for('/dash/'))
+    return redirect(url_for('/services/'))
 
-
-
-# @server.route('/remove_borrower',method=['GET','POST'])
-# def removeBorrower():
 
 @server.route('/new_borrowers', methods=['POST'])
 def newBorrower():
@@ -2189,154 +1994,38 @@ def newBorrower():
     global df_AvailabilityOutput
     df_AvailabilityOutput = df_AvailabilityOutput.merge(df_NewAvailabilityOutput, on='Terms')
 
-    app.layout = dbc.Container([
+    services_app.layout = dbc.Container([
         html.Br(),
-        dcc.Dropdown(
-            id='dropdown',
-            options=[
-                {'label': 'Intermediate results for Adjusted Borrowing Value', 'value': 'AdjBorrow'},
-                {'label': 'Intermediate results for Excess Concentration', 'value': 'ExcessC'},
-                {'label': 'Add new borrower', 'value': 'newBorrower'},
-                {'label': 'Change EBITDA current', 'value': 'EBITDA'}
-            ],
-            value='',
-            placeholder='Options',
-        ),
-        dbc.Modal(
-            [
-                dbc.ModalHeader(dbc.ModalTitle("Adjusted borrowing value intermediate values")),
-                dbc.ModalBody([
-                    returnDashDatable(df_AdjustedIntermediate, 'df_AdjustedIntermediate')
-                ]),
-                dbc.ModalFooter(
-                    dbc.Button(
-                        "Close", id="close1", className="ms-auto", n_clicks=0,
-                        style={'border': '0', 'color': '#ffffff', 'font-weight': '500', 'background-color': '#1ebea5',
-                               'border-radius': '5px'}
-                    )
-                ),
-            ],
-            id="modal1",
-            size='xl',
-            scrollable=True,
-            is_open=False,
-        ),
-        dbc.Modal(
-            [
-                dbc.ModalHeader(dbc.ModalTitle("Excess Concentration intermediate values")),
-                dbc.ModalBody([
-                    returnDashDatable(df_Excess, 'df_Excess')
-                ]),
-                dbc.ModalFooter(
-                    dbc.Button(
-                        "Close", id="close2", className="ms-auto", n_clicks=0,
-                        style={'border': '0', 'color': '#ffffff', 'font-weight': '500', 'background-color': '#1ebea5',
-                               'border-radius': '5px'}
-                    )
-                ),
-            ],
-            id="modal2",
-            size='xl',
-            scrollable=True,
-            is_open=False,
-        ),
-        dbc.Modal(
-            [
-                dbc.ModalHeader(dbc.ModalTitle("Add a new borrower")),
-                dbc.ModalBody([
-                    html.Form([html.Button('Download Excel', type='submit', id='button',
-                                           style={'background-color': '#1ebea5', 'border': '0px',
-                                                  'border-radius': '5px',
-                                                  'padding': '10px',
-                                                  'color': '#ffffff',
-                                                  'font-weight': '500'})],
-                              action='download_example', method='get'),
-                    html.Br(),
-                    html.Form([dcc.Input(type='file', name='file'),
-                               dcc.Input(type='submit', name='Upload', value='Upload',
-                                         style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
-                                                'background-color': '#1ebea5', 'border-radius': '5px'})],
-                              action='/new_borrowers', method='post', encType="multipart/form-data")
-                ]),
-                dbc.ModalFooter(
-                    dbc.Button(
-                        "Close", id="close3", className="ms-auto", n_clicks=0,
-                        style={'border': '0', 'color': '#ffffff', 'font-weight': '500', 'background-color': '#1ebea5',
-                               'border-radius': '5px'}
-                    )
-                ),
-            ],
-            id="modal3",
-            size='xl',
-            scrollable=True,
-            is_open=False,
-        ),
-        dbc.Modal(
-            [
-                dbc.ModalHeader(dbc.ModalTitle("Change EBITDA current")),
-                dbc.ModalBody([
-                    html.Form(
-                        [
-                            html.Label("Current Adjusted TTM EBITDA",
-                                       style={'whiteSpace': 'normal', 'display': 'inline-block', 'margin-right': 20,
-                                              'maxWidth': '500px'}),
-                            dcc.Input(type="number", min="-99", max="100", id="adjusted_ttm_ebitda_current",
-                                      name='Adjusted_TTM_EBITDA_Current',
-                                      placeholder='Enter the percentage value'),
-                            html.Br(),
-                            html.Button("Submit", type='submit', id='button',
-                                        style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
-                                               'background-color': '#1ebea5', 'border-radius': '5px'})
-                        ], action='/analysis', method='post', style={'display': 'flex', 'justify-content': 'center'}
-                    )
-                ]),
-                dbc.ModalFooter(
-                    dbc.Button(
-                        "Close", id="close4", className="ms-auto", n_clicks=0,
-                        style={'border': '0', 'color': '#ffffff', 'font-weight': '500', 'background-color': '#1ebea5',
-                               'border-radius': '5px'}
-                    )
-                ),
-            ],
-            id="modal4",
-            size='xl',
-            scrollable=True,
-            is_open=False,
-        ),
+        html.Div([
+            dcc.Dropdown(
+                id='dropdown-menu',
+                options=[
+                    {'label': 'Permitted TTM EBITDA',
+                     'value': 'permittedTTMEBITDA'},
+                    {'label': 'Permitted Net Senior Leverage',
+                     'value': 'permittedNetSeniorLeverage'},
+                    {'label': 'Permitted Net Total Leverage',
+                     'value': 'permittedNetTotalLeverage'},
+                    {'label': 'Excess concentration for top 5 Industries',
+                     'value': 'Top5Industries'},
+                    {'label': 'Excess concentration for top 5 Obligors',
+                     'value': 'Top5Obligors'},
+                    {'label': 'Complete Analysis',
+                     'value': 'completeAnalysis'},
+                ],
+                value='',
+                placeholder='Services',
+            ),
+            html.Div([serviceDivLayout(df_AdjustedIntermediate, df_Excess, df_Portfolio[['Borrower']],
+                                       df_AvailabilityOutput)], id='dropdown-output4'),
+            html.Div(children=[html.Div([html.Div(id='dropdown-output2')], id='dropdown-output')],
+                     id='dropdown-output1'),
 
-        html.Br(),
-        html.H4("Availability Data"),
-        returnDashDatable(df_AvailabilityOutput, 'df_NewAvailabilityOutput'),
-        html.Br(),
-        html.Form([html.Button('Download Results', type='submit', id='button',
-                               style={'background-color': '#1ebea5', 'border': '0px', 'border-radius': '5px',
-                                      'padding': '10px',
-                                      'color': '#ffffff',
-                                      'font-weight': '500'})],
-                  action='download_excel', method='get', style={'display': 'flex', 'justify-content': 'center'}),
-        # html.H4("Portfolio Data"),
-        # returnDashDatable(df_Portfolio, 'df_Portfolio'),
-        # html.Br(),
-        # html.H4("Excess Concentration Data"),
-        # returnDashDatable(df_ExcessConcentration, 'df_ExcessConcentration'),
-        # html.Br(),
-        # html.H4("Obligor Outstanding Data"),
-        # returnDashDatable(df_BorrowerOutstandings, 'df_BorrowerOutstandings'),
-        # html.Br(),
-        # html.H4("Tiers Data"),
-        # returnDashDatable(df_Tiers, 'df_Tiers'),
-        # html.Br(),
-        # html.H4("EBITDA Data"),
-        # returnDashDatable(df_Ebitda, 'df_Ebitda'),
-        # html.Br(),
-        # html.H4("Industries Data"),
-        # returnDashDatable(df_Industries, 'df_Industries'),
-        # html.Br(),
-        # html.H4("VAE Data"),
-        # returnDashDatable(df_VAE, 'df_VAE'),
-        # html.Br(),
+        ])
     ])
-    return redirect(url_for('/dash/'))
+
+    return redirect(url_for('/services/'))
+
 
 @server.route('/newVAE', methods=['POST'])
 def newVAE():
@@ -2362,153 +2051,38 @@ def newVAE():
         columns={'Values': 'Updated after VAE trigger'}, inplace=True)
     global df_AvailabilityOutput
     df_AvailabilityOutput = df_AvailabilityOutput.merge(df_NewAvailabilityVAE, on='Terms')
-    print(df_VAE)
-    app.layout = dbc.Container([
+
+    services_app.layout = dbc.Container([
         html.Br(),
-        dcc.Dropdown(
-            id='dropdown',
-            options=[
-                {'label': 'Intermediate results for Adjusted Borrowing Value', 'value': 'AdjBorrow'},
-                {'label': 'Intermediate results for Excess Concentration', 'value': 'ExcessC'},
-                {'label': 'Add new borrower', 'value': 'newBorrower'},
-                {'label': 'Change EBITDA current', 'value': 'EBITDA'}
-            ],
-            value='',
-            placeholder='Options',
-        ),
-        dbc.Modal(
-            [
-                dbc.ModalHeader(dbc.ModalTitle("Adjusted borrowing value intermediate values")),
-                dbc.ModalBody([
-                    returnDashDatable(df_AdjustedIntermediate, 'df_AdjustedIntermediate')
-                ]),
-                dbc.ModalFooter(
-                    dbc.Button(
-                        "Close", id="close1", className="ms-auto", n_clicks=0,
-                        style={'border': '0', 'color': '#ffffff', 'font-weight': '500', 'background-color': '#1ebea5',
-                               'padding': '10px', 'border-radius': '5px'}
-                    )
-                ),
-            ],
-            id="modal1",
-            size='xl',
-            scrollable=True,
-            is_open=False,
-        ),
-        dbc.Modal(
-            [
-                dbc.ModalHeader(dbc.ModalTitle("Excess Concentration intermediate values")),
-                dbc.ModalBody([
-                    returnDashDatable(df_Excess, 'df_Excess')
-                ]),
-                dbc.ModalFooter(
-                    dbc.Button(
-                        "Close", id="close2", className="ms-auto", n_clicks=0,
-                        style={'border': '0', 'color': '#ffffff', 'font-weight': '500', 'background-color': '#1ebea5',
-                               'padding': '10px', 'border-radius': '5px'}
-                    )
-                ),
-            ],
-            id="modal2",
-            size='xl',
-            scrollable=True,
-            is_open=False,
-        ),
-        dbc.Modal(
-            [
-                dbc.ModalHeader(dbc.ModalTitle("Add a new borrower")),
-                dbc.ModalBody([
-                    html.Form([html.Button('Download Example', type='submit', id='button',
-                                           style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
-                                                  'background-color': '#1ebea5', 'padding': '10px',
-                                                  'border-radius': '5px'})],
-                              action='download_example', method='get'),
-                    html.Br(),
-                    html.Form([dcc.Input(type='file', name='file'),
-                               dcc.Input(type='submit', name='Upload', value='Upload',
-                                         style={'border': '0', 'color': '#ffffff', 'font-weight': '500',
-                                                'background-color': '#1ebea5', 'padding': '10px',
-                                                'border-radius': '5px'})],
-                              action='/new_borrowers', method='post', encType="multipart/form-data")
-                ]),
-                dbc.ModalFooter(
-                    dbc.Button(
-                        "Close", id="close3", className="ms-auto", n_clicks=0,
-                        style={'border': '0', 'color': '#ffffff', 'font-weight': '500', 'background-color': '#1ebea5',
-                               'padding': '10px', 'border-radius': '5px'}
-                    )
-                ),
-            ],
-            id="modal3",
-            size='xl',
-            scrollable=True,
-            is_open=False,
-        ),
-        dbc.Modal(
-            [
-                dbc.ModalHeader(dbc.ModalTitle("Change EBITDA current")),
-                dbc.ModalBody([
-                    html.Form(
-                        [
-                            html.Label("Current Adjusted TTM EBITDA",
-                                       style={'whiteSpace': 'normal', 'display': 'inline-block', 'margin-right': 20,
-                                              'maxWidth': '500px'}),
-                            dcc.Input(type="number", min="-99", max="100", id="adjusted_ttm_ebitda_current",
-                                      name='Adjusted_TTM_EBITDA_Current',
-                                      placeholder='Enter the percentage value'),
-                            html.Br(),
-                            html.Button("Submit", type='submit', id='button',
-                                        style={'border': '0', 'border-radius': '5px', 'color': '#ffffff',
-                                               'font-weight': '500', 'background-color': '#1ebea5', 'padding': '10px'})
-                        ], action='/analysis', method='post', style={'display': 'flex', 'justify-content': 'center'})
-                ]),
-                dbc.ModalFooter(
-                    dbc.Button(
-                        "Close", id="close4", className="ms-auto", n_clicks=0,
-                        style={'border': '0', 'color': '#ffffff', 'font-weight': '500', 'background-color': '#1ebea5',
-                               'padding': '10px', 'border-radius': '5px'}
-                    )
-                ),
-            ],
-            id="modal4",
-            size='xl',
-            scrollable=True,
-            is_open=False,
-        ),
-        html.Br(),
-        html.H4("Availability Data"),
-        returnDashDatable(df_AvailabilityOutput, 'df_AvailabilityOutput'),
-        html.Br(),
-        html.Form([html.Button('Download Results', type='submit', id='button',
-                               style={'background-color': '#1ebea5', 'border': '0px', 'border-radius': '5px',
-                                      'padding': '10px',
-                                      'color': '#ffffff',
-                                      'font-weight': '500'})],
-                  action='download_excel', method='get', style={'display': 'flex', 'justify-content': 'center'}),
-        # html.H4("Portfolio Data"),
-        # returnDashDatable(df_Portfolio, 'df_Portfolio'),
-        # html.Br(),
-        # html.H4("Excess Concentration Data"),
-        # returnDashDatable(df_ExcessConcentration, 'df_ExcessConcentration'),
-        # html.Br(),
-        # html.H4("Obligor Outstanding Data"),
-        # returnDashDatable(df_BorrowerOutstandings, 'df_BorrowerOutstandings'),
-        # html.Br(),
-        # html.H4("Tiers Data"),
-        # returnDashDatable(df_Tiers, 'df_Tiers'),
-        # html.Br(),
-        # html.H4("EBITDA Data"),
-        # returnDashDatable(df_Ebitda, 'df_Ebitda'),
-        # html.Br(),
-        # html.H4("Industries Data"),
-        # returnDashDatable(df_Industries, 'df_Industries'),
-        # html.Br(),
-        # html.H4("VAE Data"),
-        # returnDashDatable(df_VAE, 'df_VAE'),
-        # html.Br(),
+        html.Div([
+            dcc.Dropdown(
+                id='dropdown-menu',
+                options=[
+                    {'label': 'Permitted TTM EBITDA',
+                     'value': 'permittedTTMEBITDA'},
+                    {'label': 'Permitted Net Senior Leverage',
+                     'value': 'permittedNetSeniorLeverage'},
+                    {'label': 'Permitted Net Total Leverage',
+                     'value': 'permittedNetTotalLeverage'},
+                    {'label': 'Excess concentration for top 5 Industries',
+                     'value': 'Top5Industries'},
+                    {'label': 'Excess concentration for top 5 Obligors',
+                     'value': 'Top5Obligors'},
+                    {'label': 'Complete Analysis',
+                     'value': 'completeAnalysis'},
+                ],
+                value='',
+                placeholder='Services',
+            ),
+            html.Div([serviceDivLayout(df_AdjustedIntermediate, df_Excess, df_Portfolio[['Borrower']],
+                                       df_AvailabilityOutput)], id='dropdown-output3'),
+            html.Div(children=[html.Div([html.Div(id='dropdown-output2')], id='dropdown-output')],
+                     id='dropdown-output1'),
+
+        ])
     ])
 
-    return redirect(url_for('/dash/'))
+    return redirect(url_for('/services/'))
 
 
 @server.route("/services/download_excel", methods=['GET', 'POST'])
