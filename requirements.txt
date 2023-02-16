@@ -9,3 +9,4 @@ xlsxwriter
 openpyxl
 pycallgraph2~=1.1.3
 DateTime~=4.7
+flask-cors

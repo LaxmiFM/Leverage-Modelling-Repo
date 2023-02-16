@@ -1224,7 +1224,7 @@ def intermediateAdjBorrowing():
 def intermediateExcessConc():
     try:
         output_json = {}
-        output_json["error"] = Falsee
+        output_json["error"] = False
         output_json["results"] = df_Excess.to_dict('records')
         return jsonify(output_json)
     except Exception as e:
