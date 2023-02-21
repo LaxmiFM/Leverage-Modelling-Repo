@@ -9,13 +9,11 @@ WORKDIR /app
 
 # install the dependencies and packages in the requirements file
 RUN python3 -m pip install --upgrade pip
-RUN python3 -m pip install pandas
-RUN python3 -m pip install numpy
 RUN python3 -m pip install -r requirements.txt
 
 # copy every content from the local file to the image
 COPY . /app
 
 # configure the container to run in an executed manner
-EXPOSE 5000
+
 CMD ["python3", "LeverageModelling.py" ]

@@ -1,0 +1,21 @@
+{
+  "files": {
+    "main.css": "/static/css/main.a4f1d808.css",
+    "main.js": "/static/js/main.9ac46c0f.js",
+    "static/media/BaseData.xlsx": "/static/media/BaseData.71d680d58661ee51dc14.xlsx",
+    "static/media/onPepperLogo.svg": "/static/media/onPepperLogo.c1c4a11a3a56819f66c5a3f70ee02cc9.svg",
+    "static/media/PortfolioExample.xlsx": "/static/media/PortfolioExample.95ce10d741058adc593a.xlsx",
+    "static/media/info.svg": "/static/media/info.5a73051d158e80571b57bb0fc2b37958.svg",
+    "static/media/excel.svg": "/static/media/excel.f640c1ff990023c7fc875278aedc1ae5.svg",
+    "static/media/upload.svg": "/static/media/upload.a8b912695be7b445335f5160e1b32563.svg",
+    "index.html": "/index.html",
+    "static/media/cross.svg": "/static/media/cross.d3d25ab2a10f2ef80a231c5e21a8a7ee.svg",
+    "static/media/arrow.svg": "/static/media/arrow.7212d6094a6a59a3fbf6d797254b1ac6.svg",
+    "main.a4f1d808.css.map": "/static/css/main.a4f1d808.css.map",
+    "main.9ac46c0f.js.map": "/static/js/main.9ac46c0f.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.a4f1d808.css",
+    "static/js/main.9ac46c0f.js"
+  ]
+}

@@ -1,0 +1,15 @@
+paths:
+  http://127:0:0:1:5000/view_file:
+tags:
+  - Excel File
+consumes:
+  - multipart/form-data
+parameters:
+  - name: file
+    in: formData
+    type: file
+    required: true
+    description: The base data excel file to be uploaded.
+responses:
+  200:
+    description: File uploaded successfully

@@ -8,7 +8,7 @@ from flask_cors import CORS, cross_origin
 from LeverageModellingFunctions import *
 
 
-server = Flask(__name__)
+server = Flask(__name__, static_folder="build/static", template_folder="build")
 CORS(server)
 
 server.config['JSON_SORT_KEYS'] = False
@@ -185,12 +185,30 @@ def calculateAvailability(df_Portfolio1, df_Tiers1, df_Ebitda1, df_VAE1, df_Avai
          'Assigned Value', 'Applicable Collateral Value', 'Current Multiple', 'Permitted Net Total Leverage',
          'Permitted Net Senior Leverage', 'Permitted TTM EBITDA', 'Permitted TTM EBITDA Current',
          'Excess Add-Backs', 'Capped AddBack Percentage', 'Add Back Percentage', 'Adjusted Borrowing Value']]
+    def format_number(x):
+        if isinstance(x, (int, float)):
+            if isinstance(x, int):
+                return '{:,.0f}'.format(x)
+            else:
+                magnitude = abs(x)
+                if magnitude >= 1e3:
+                    return '{:,.0f}'.format(x)
+                else:
+                    return '{:,.2f}'.format(x).rstrip('0').rstrip('.')
+                
+        else:
+            return x
+    
+    def format_percentages(x):
+        return '{:.2f}%'.format(x * 100)
 
-    format_dict = {
-        'Assigned Value': '{:.2%}','Applicable Collateral Value': '{:.2%}','Permitted Net Total Leverage': '{:.2f}','Permitted Net Senior Leverage': '{:.2f}','Capped AddBack Percentage': '{:.2%}','Add Back Percentage': '{:.2%}'
-    }
+    df_AdjustedIntermediate[['Assigned Value','Applicable Collateral Value','Capped AddBack Percentage','Add Back Percentage']] = df_AdjustedIntermediate[['Assigned Value','Applicable Collateral Value','Capped AddBack Percentage','Add Back Percentage']].applymap(format_percentages)   
+    df_AdjustedIntermediate = df_AdjustedIntermediate.applymap(format_number)
+    # format_dict = {
+    #     'Assigned Value': '{:.2%}','Applicable Collateral Value': '{:.2%}','Permitted Net Total Leverage': '{:.2f}','Permitted Net Senior Leverage': '{:.2f}','Capped AddBack Percentage': '{:.2%}','Add Back Percentage': '{:.2%}'
+    # }
 
-    df_AdjustedIntermediate.style.format(format_dict)
+    # df_AdjustedIntermediate.style.format(format_dict)
 
     # df_AdjustedIntermediate.style.format({12: '{:.2f}',13: '{:.2f}',14: '{:.2f}')
 
@@ -1030,7 +1048,7 @@ def calculateAvailability(df_Portfolio1, df_Tiers1, df_Ebitda1, df_VAE1, df_Avai
 @server.route('/', methods=['GET', 'POST'])
 def upload():
     if request.method == 'GET':
-        return "Hello"
+        return render_template("index.html")
 
 @server.route('/api/leveragemodel/uploadDataSource', methods=['POST'])
 def results():
@@ -1074,13 +1092,13 @@ def results():
             output_json["error"] = False
             # output_json["errorMessage"] = ''
             output_json["conditionSatisfied"] = True
-            output_json["importedData"] = merged_df.to_dict('records')
+            output_json["importedData"] = merged_df.fillna('').to_dict('records')
             return jsonify(output_json)
         else:
             output_json["error"] = False
             # output_json["errorMessage"] = ''
             output_json["conditionSatisfied"] = False
-            output_json["importedData"] = merged_df.to_dict('records')
+            output_json["importedData"] = merged_df.fillna('').to_dict('records')
             return jsonify(output_json)
     except Exception as e:
         output_json = {}
@@ -1094,7 +1112,7 @@ def generatedResult():
     try:
         output_json = {}
         output_json["error"] = False
-        output_json["generatedResults"] = df_AvailabilityOutput.to_dict('records')
+        output_json["generatedResults"] = df_AvailabilityOutput.fillna('').to_dict('records')
         return jsonify(output_json)
     except Exception as e:
         output_json = {}
@@ -1128,7 +1146,7 @@ def newBorrower():
         df_AvailabilityOutput = df_AvailabilityOutput.merge(df_NewAvailabilityOutput, on='Terms')
 
         output_json["error"] = False
-        output_json["generatedResults"] = df_AvailabilityOutput.to_dict('records')
+        output_json["generatedResults"] = df_AvailabilityOutput.fillna('').to_dict('records')
         # print(output_json)
         return jsonify(output_json)
 
@@ -1145,17 +1163,12 @@ def newVAE():
         output_json = {}
         f2 = request.files['file']
         f2.save(f2.filename)
-        # df_newPortfolio = pd.read_excel(f2.filename, sheet_name=0)
         df_newVAEDetails = pd.read_excel(f2.filename, sheet_name=0)
 
-        # df_UpdatedPortfolio = df_Portfolio.copy(deep=True)
         df_UpdatedVAE = df_VAE.copy(deep=True)
 
-        # df_UpdatedPortfolio = pd.concat([df_UpdatedPortfolio, df_newPortfolio], ignore_index=True, sort=False)
         df_newVAEDetails = pd.concat([df_UpdatedVAE, df_newVAEDetails], ignore_index=True, sort=False)
-        # print(df_newVAEDetails)
         df_newVAEDetails = df_newVAEDetails.drop(['Net Senior Leverage', 'Net Total Leverage'], axis=1)
-        # print(df_newVAEDetails)
         df_NewAvailabilityVAE = calculateAvailability(df_Portfolio, df_Tiers, df_Ebitda, df_newVAEDetails,
                                                       df_Availability,
                                                       df_ExcessConcentration, df_Industries,
@@ -1167,7 +1180,7 @@ def newVAE():
         df_AvailabilityOutput = df_AvailabilityOutput.merge(df_NewAvailabilityVAE, on='Terms')
 
         output_json["error"] = False
-        output_json["generatedResults"] = df_AvailabilityOutput.to_dict('records')
+        output_json["generatedResults"] = df_AvailabilityOutput.fillna('').to_dict('records')
         return jsonify(output_json)
 
     except Exception as e:
@@ -1182,7 +1195,7 @@ def changeEbitda():
         output_json = {}
         percentage_change1 = float(request.form['Adjusted_TTM_EBITDA_Current'])
         percentage_change = 1 + (percentage_change1 / 100)
-        print(percentage_change)
+        # print(percentage_change)
         updated_df_Portfolio = df_Portfolio.copy(deep=True)
         updated_df_Portfolio['Adjusted TTM EBITDA_Current'] = df_Portfolio[
                                                                   'Adjusted TTM EBITDA_Current'] * percentage_change
@@ -1198,7 +1211,7 @@ def changeEbitda():
         # df_AvailabilityOutput.merge(Updated_df_AvailabilityOutput, on='Terms')
 
         output_json["error"] = False
-        output_json["generatedResults"] = df_AvailabilityOutput.to_dict('records')
+        output_json["generatedResults"] = df_AvailabilityOutput.fillna('').to_dict('records')
         return jsonify(output_json)
     except Exception as e:
         output_json = {}
@@ -1212,8 +1225,9 @@ def intermediateAdjBorrowing():
     try:
         output_json = {}
         output_json["error"] = False
-        output_json["results"] = df_AdjustedIntermediate.to_dict('records')
-        return jsonify(output_json)
+        output_json["results"] = df_AdjustedIntermediate.fillna('').to_dict('records')
+        data = jsonify(output_json)
+        return data
     except Exception as e:
         output_json = {}
         output_json["error"] = True
@@ -1225,13 +1239,58 @@ def intermediateExcessConc():
     try:
         output_json = {}
         output_json["error"] = False
-        output_json["results"] = df_Excess.to_dict('records')
+        output_json["results"] = df_Excess.fillna('').to_dict('records')
         return jsonify(output_json)
     except Exception as e:
         output_json = {}
         output_json["error"] = True
         output_json["errorMessage"] = str(e)
         return jsonify(output_json)
+
+
+@server.route('/api/leveragemodel/downloadGeneratedResult', methods=['GET'])
+def downloadExcel():
+    if request.method == 'GET':
+        # df = session.get('df', None)
+        output = BytesIO()
+        writer = pd.ExcelWriter(output, engine='xlsxwriter')
+        # print(df_Portfolio.head())
+        df_AvailabilityOutput.to_excel(writer, index=False, sheet_name='Availability')
+        df_Portfolio.to_excel(writer, index=False, sheet_name='Portfolio')
+        df_ExcessConcentration.to_excel(writer, index=False, sheet_name='Excess Concentration')
+        df_Availability.to_excel(writer, index=False, sheet_name='Availability values')
+        df_Tiers.to_excel(writer, index=False, sheet_name='Tiers')
+        df_Ebitda.to_excel(writer, index=False, sheet_name='EBITDA Values')
+        df_Industries.to_excel(writer, index=False, sheet_name='Industries')
+        df_VAE.to_excel(writer, index=False, sheet_name='VAE')
+        # writer.save()
+        writer.close()
+        output.seek(0)
+        # xlsx_data = output.getvalue()
+        return send_file(output, download_name='Availability.xlsx', as_attachment=True)
+
+
+@server.route('/api/leveragemodel/downloadPortfolioExample', methods=['GET'])
+def downloadExample():
+    if request.method == 'GET':
+        output = BytesIO()
+        writer = pd.ExcelWriter(output, engine='xlsxwriter')
+        df_newBorrowerPortfolio.to_excel(writer, index=False, sheet_name='Portfolio_Example')
+        df_newBorrowerVAE.to_excel(writer, index=False, sheet_name='VAE_Example')
+        writer.close()
+        output.seek(0)
+        return send_file(output, download_name='PortfolioExample.xlsx', as_attachment=True)
+    
+
+@server.route('/api/leveragemodel/downloadVAEData', methods=['GET'])
+def downloadVAEDetails():
+    if request.method == 'GET':
+        output = BytesIO()
+        writer = pd.ExcelWriter(output, engine='xlsxwriter')
+        merged_df.to_excel(writer, index=False, sheet_name='VAE Details')
+        writer.close()
+        output.seek(0)
+        return send_file(output, download_name='NewBorrowerVAEDetails.xlsx', as_attachment=True)
 
 
 if __name__ == '__main__':
