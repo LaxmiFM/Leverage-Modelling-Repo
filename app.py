@@ -8,10 +8,10 @@ from flask_cors import CORS, cross_origin
 from LeverageModellingFunctions import *
 
 
-server = Flask(__name__, static_folder="build/static", template_folder="build")
-CORS(server)
+app = Flask(__name__, static_folder="build/static", template_folder="build")
+CORS(app)
 
-server.config['JSON_SORT_KEYS'] = False
+app.config['JSON_SORT_KEYS'] = False
 
 def calculateAvailability(df_Portfolio1, df_Tiers1, df_Ebitda1, df_VAE1, df_Availability1, df_ExcessConcentration1,
                           df_Industries1, df_BorrowerOutstandings1):
@@ -1045,12 +1045,12 @@ def calculateAvailability(df_Portfolio1, df_Tiers1, df_Ebitda1, df_VAE1, df_Avai
         merged_df = merged_df.fillna('')
     return pd.DataFrame(AvailabilityDict)
 
-@server.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
 def upload():
     if request.method == 'GET':
         return render_template("index.html")
 
-@server.route('/api/leveragemodel/uploadDataSource', methods=['POST'])
+@app.route('/api/leveragemodel/uploadDataSource', methods=['POST'])
 def results():
     try:
         output_json = {}
@@ -1107,7 +1107,7 @@ def results():
         return jsonify(output_json)
 
 @cross_origin(origin="*")
-@server.route('/api/leveragemodel/generatedResult', methods=['GET'])
+@app.route('/api/leveragemodel/generatedResult', methods=['GET'])
 def generatedResult():
     try:
         output_json = {}
@@ -1121,7 +1121,7 @@ def generatedResult():
         return jsonify(output_json)
 
 
-@server.route('/api/leveragemodel/addBorrower', methods=['POST'])
+@app.route('/api/leveragemodel/addBorrower', methods=['POST'])
 def newBorrower():
     try:
         output_json = {}
@@ -1157,7 +1157,7 @@ def newBorrower():
         return jsonify(output_json)
 
 
-@server.route('/api/leveragemodel/reuploadDataSource', methods=['POST'])
+@app.route('/api/leveragemodel/reuploadDataSource', methods=['POST'])
 def newVAE():
     try:
         output_json = {}
@@ -1189,7 +1189,7 @@ def newVAE():
         output_json["errorMessage"] = str(e)
         return jsonify(output_json)
 
-@server.route('/api/leveragemodel/changeEbitda', methods=['POST'])
+@app.route('/api/leveragemodel/changeEbitda', methods=['POST'])
 def changeEbitda():
     try:
         output_json = {}
@@ -1220,7 +1220,7 @@ def changeEbitda():
         return jsonify(output_json)
 
 
-@server.route('/api/leveragemodel/adjustedBorrowing', methods=['GET'])
+@app.route('/api/leveragemodel/adjustedBorrowing', methods=['GET'])
 def intermediateAdjBorrowing():
     try:
         output_json = {}
@@ -1234,7 +1234,7 @@ def intermediateAdjBorrowing():
         output_json["errorMessage"] = str(e)
         return jsonify(output_json)
 
-@server.route('/api/leveragemodel/excessConcentration', methods=['GET'])
+@app.route('/api/leveragemodel/excessConcentration', methods=['GET'])
 def intermediateExcessConc():
     try:
         output_json = {}
@@ -1248,7 +1248,7 @@ def intermediateExcessConc():
         return jsonify(output_json)
 
 
-@server.route('/api/leveragemodel/downloadGeneratedResult', methods=['GET'])
+@app.route('/api/leveragemodel/downloadGeneratedResult', methods=['GET'])
 def downloadExcel():
     if request.method == 'GET':
         # df = session.get('df', None)
@@ -1270,7 +1270,7 @@ def downloadExcel():
         return send_file(output, download_name='Availability.xlsx', as_attachment=True)
 
 
-@server.route('/api/leveragemodel/downloadPortfolioExample', methods=['GET'])
+@app.route('/api/leveragemodel/downloadPortfolioExample', methods=['GET'])
 def downloadExample():
     if request.method == 'GET':
         output = BytesIO()
@@ -1282,7 +1282,7 @@ def downloadExample():
         return send_file(output, download_name='PortfolioExample.xlsx', as_attachment=True)
     
 
-@server.route('/api/leveragemodel/downloadVAEData', methods=['GET'])
+@app.route('/api/leveragemodel/downloadVAEData', methods=['GET'])
 def downloadVAEDetails():
     if request.method == 'GET':
         output = BytesIO()
@@ -1294,4 +1294,4 @@ def downloadVAEDetails():
 
 
 if __name__ == '__main__':
-    server.run(host='0.0.0.0', debug=True)
+    app.run()

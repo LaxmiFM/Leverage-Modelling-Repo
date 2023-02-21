@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/56954fb5-1c60-4d32-a7a5-a50447ce5987/AppServices/subscriptions/56954fb5-1c60-4d32-a7a5-a50447ce5987/resourceGroups/appsvc_linux_centralus/providers/Microsoft.Web/sites/leveragemodelling",
+    "appService.deploySubpath": "."
+}
