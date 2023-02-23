@@ -186,7 +186,9 @@ def calculateAvailability(df_Portfolio1, df_Tiers1, df_Ebitda1, df_VAE1, df_Avai
          'Permitted Net Senior Leverage', 'Permitted TTM EBITDA', 'Permitted TTM EBITDA Current',
          'Excess Add-Backs', 'Capped AddBack Percentage', 'Add Back Percentage', 'Adjusted Borrowing Value']]
     def format_number(x):
-        if isinstance(x, (int, float)):
+        if pd.isna(x):
+                return x
+        elif isinstance(x, (int, float)):
             if isinstance(x, int):
                 return '{:,.0f}'.format(x)
             else:
@@ -200,7 +202,10 @@ def calculateAvailability(df_Portfolio1, df_Tiers1, df_Ebitda1, df_VAE1, df_Avai
             return x
     
     def format_percentages(x):
-        return '{:.2f}%'.format(x * 100)
+        if pd.isna(x):
+                return x   
+        else:
+            return '{:.2f}%'.format(x * 100)   
 
     df_AdjustedIntermediate[['Assigned Value','Applicable Collateral Value','Capped AddBack Percentage','Add Back Percentage']] = df_AdjustedIntermediate[['Assigned Value','Applicable Collateral Value','Capped AddBack Percentage','Add Back Percentage']].applymap(format_percentages)   
     df_AdjustedIntermediate = df_AdjustedIntermediate.applymap(format_number)
@@ -1038,11 +1043,16 @@ def calculateAvailability(df_Portfolio1, df_Tiers1, df_Ebitda1, df_VAE1, df_Avai
     condition = df_Portfolio['VAE Trigger'] == 'Yes'
     df_borrowers = df_Portfolio[condition]
     df_borrowers = df_borrowers[['Borrower']]
-
     global merged_df
-    merged_df = pd.merge(df_borrowers, df_newVAE, on='Borrower', how='left')
+    merged_df = pd.merge(df_borrowers, df_VAE1, on='Borrower', how='left')
+    merged_df=merged_df[['Borrower','Event Type','Date of VAE Decision','Assigned Value','Interest Coverage','TTM EBITDA','Senior Debt','Unrestricted Cash','Total Debt','Liquidity']]
+    merged_df=merged_df.astype({'Date of VAE Decision':'object','Assigned Value':'object','Interest Coverage':'object','TTM EBITDA':'object','Senior Debt':'object','Unrestricted Cash':'object','Total Debt':'object','Liquidity':'object'})
+    merged_df['Assigned Value']=merged_df['Assigned Value'].apply(lambda x: format_percentages(x))
+    
+    merged_df['Interest Coverage']=merged_df['Interest Coverage'].apply(lambda x: format_number(x))
+    
     if len(df_newVAE)==0:
-        merged_df = merged_df.fillna('')
+        merged_df=merged_df.fillna('')
     return pd.DataFrame(AvailabilityDict)
 
 @app.route('/', methods=['GET', 'POST'])
